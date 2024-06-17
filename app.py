@@ -47,7 +47,7 @@ def style_prediction():
     """, unsafe_allow_html=True)
 
 # Load the model
-with open("G:\\PROJECT\\Singapore-Resale-Flat-Prices-Predicting\\regression_model.pkl.gz", 'rb') as f:
+with open("G:\\PROJECT\\Singapore-Resale-Flat-Prices-Predicting\\regression_model.pkl", 'rb') as f:
     model = pickle.load(f)
 
 # Feature names
