@@ -1,27 +1,22 @@
-
 import numpy as np
 import pickle
 import streamlit as st
 from streamlit_option_menu import option_menu
+from datetime import datetime
 from PIL import Image
-from sklearn.preprocessing import OrdinalEncoder
-from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from sklearn.linear_model import LinearRegression
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import r2_score
 
 # Streamlit page custom design
 def streamlit_config():
     st.set_page_config(layout="wide")
     st.write("""
     <div style='text-align:center'>
-        <h1 style='color:#009999;'> Singapore Resale Price Prediction </h1>
+        <h1 style='color:#009999;'>Singapore Resale Price Prediction</h1>
     </div>
     """, unsafe_allow_html=True)
 
-# custom style for submit button - color and width
+# Custom style for submit button - color and width
 def style_submit_button():
     st.markdown("""
         <style>
@@ -35,7 +30,7 @@ def style_submit_button():
         </style>
     """, unsafe_allow_html=True)
 
-# custom style for prediction result text - color and position
+# Custom style for prediction result text - color and position
 def style_prediction():
     st.markdown("""
         <style>
@@ -52,7 +47,7 @@ with open("G:\\PROJECT\\Singapore-Resale-Flat-Prices-Predicting\\regression_mode
 
 # Feature names
 features = ['town', 'flat_type', 'storey_range', 'floor_area_sqm', 'flat_model',
-             'year', 'month_of_year', 'lease_commence_year',
+            'year', 'month_of_year', 'lease_commence_year',
             'remaining_lease_years', 'remaining_lease_months']
 
 # Categorical variable mappings
@@ -64,17 +59,14 @@ categorical_mappings = {
              'QUEENSTOWN': 18, 'SEMBAWANG': 19, 'GEYLANG': 10, 'CLEMENTI': 9,
              'JURONG EAST': 12, 'BISHAN': 2, 'SERANGOON': 21, 'CENTRAL AREA': 7,
              'MARINE PARADE': 15, 'BUKIT TIMAH': 6},
-    
     'flat_type': {'4 ROOM': 3, '5 ROOM': 4, '3 ROOM': 2,
                   'EXECUTIVE': 5, '2 ROOM': 1, 'MULTI-GENERATION': 6,
                   '1 ROOM': 0},
-    
     'storey_range': {'04 TO 06': 1, '07 TO 09': 2, '10 TO 12': 3, '01 TO 03': 0,
                      '13 TO 15': 4, '16 TO 18': 5, '19 TO 21': 6, '22 TO 24': 7,
                      '25 TO 27': 8, '28 TO 30': 9, '31 TO 33': 10, '34 TO 36': 11,
                      '37 TO 39': 12, '40 TO 42': 13, '43 TO 45': 14, '46 TO 48': 15,
                      '49 TO 51': 16},
-    
     'flat_model': {'Model A': 8, 'Improved': 5, 'New Generation': 12, 'Premium Apartment': 13,
                    'Simplified': 16, 'Apartment': 3, 'Maisonette': 7, 'Standard': 17,
                    'DBSS': 4, 'Model A2': 10, 'Model A-Maisonette': 9, 'Adjoined flat': 2,
@@ -89,45 +81,54 @@ def About_page():
     with col1:
         st.subheader(":violet[Problem Statement:]")
         st.write("""
-            
-            -Develop a machine learning model and build  a user-friendly web application to predict resale flat prices in Singapore, 
-                assisting both potential buyers and sellers in estimating the market value based on historical transaction data.
-            """)
+        - Develop a machine learning model and build a user-friendly web application to predict resale flat prices in Singapore, 
+          assisting both potential buyers and sellers in estimating the market value based on historical transaction data.
+        """)
     with col2:
-        
         st.write("* **:red[Purpose]** : Predict the selling Flat Price.")
         st.write("* **:red[Techniques Used]** : Data Wrangling and Preprocessing, Exploratory Data Analysis (EDA), Model Building and Evaluation, Web Application Development.")
         st.write("* **:red[Algorithm]** : Random Forest Regression.")
 
     st.image(Image.open(r"G:\\PROJECT\\Singapore-Resale-Flat-Prices-Predicting\\4.png"), width=1000)    
-        
 
 # Function to display the flat prediction page
 def Prediction_page():
-
     input_data = {}
+    current_year = datetime.now().year
 
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        for feature in features[:len(features)//2]:
-            if feature in categorical_mappings:
-                selected_option = st.selectbox(f"Select {feature.capitalize()}:", options=list(categorical_mappings[feature].keys()))
-                input_data[feature] = categorical_mappings[feature][selected_option]
-            else:
-                input_data[feature] = st.number_input(f"{feature.capitalize()}:")
+        input_data['town'] = st.selectbox('Town:', options=list(categorical_mappings['town'].keys()))
+        input_data['flat_type'] = st.selectbox('Flat Type:', options=list(categorical_mappings['flat_type'].keys()))
+        input_data['storey_range'] = st.selectbox('Storey Range:', options=list(categorical_mappings['storey_range'].keys()))
+        input_data['floor_area_sqm'] = st.number_input('Floor Area (sqm):', min_value=28.0, max_value=173.0, value=60.0, step=1.0)
+        input_data['flat_model'] = st.selectbox('Flat Model:', options=list(categorical_mappings['flat_model'].keys()))
 
     with col2:
-        for feature in features[len(features)//2:]:
-            if feature in categorical_mappings:
-                selected_option = st.selectbox(f"Select {feature.capitalize()}:", options=list(categorical_mappings[feature].keys()))
-                input_data[feature] = categorical_mappings[feature][selected_option]
-            else:
-                input_data[feature] = st.number_input(f"{feature.capitalize()}:")
+        input_data['year'] = st.selectbox('Year:', options=list(range(2015, current_year + 1)))
+        input_data['month_of_year'] = st.selectbox('Month of Year:', options=list(range(1, 13)))
+        input_data['lease_commence_year'] = st.selectbox('Lease Commence Year:', options=list(range(1900, 2101)))
+        input_data['remaining_lease_years'] = st.slider('Remaining Lease Years:', min_value=0, max_value=99, step=1)
+        input_data['remaining_lease_months'] = st.slider('Remaining Lease Months:', min_value=0, max_value=11, step=1)
 
     with col3:
         if st.button("Predict"):
-            input_array = np.array([input_data[feature] for feature in features]).reshape(1, -1)
+            # Convert categorical variables to numerical using mappings
+            input_array = np.array([
+                categorical_mappings['town'][input_data['town']],
+                categorical_mappings['flat_type'][input_data['flat_type']],
+                categorical_mappings['storey_range'][input_data['storey_range']],
+                input_data['floor_area_sqm'],
+                categorical_mappings['flat_model'][input_data['flat_model']],
+                input_data['year'],
+                input_data['month_of_year'],
+                input_data['lease_commence_year'],
+                input_data['remaining_lease_years'],
+                input_data['remaining_lease_months']
+            ]).reshape(1, -1)
+
+            # Perform prediction
             prediction = model.predict(input_array)
 
             # Display the prediction result
@@ -153,8 +154,9 @@ def Conclusion_page():
     with col2:
         st.subheader(":violet[Final Observations]")
         st.write("""
-        - The Singapore Resale Flat Prices Prediction project has successfully developed a high-performing predictive model and a user-friendly web application that benefits both buyers and sellers in the competitive Singapore housing market.
-        - The high accuracy of the Random Forest Regressor model indicates a strong potential for practical application, providing a valuable tool for estimating resale prices and demonstrating the impactful role of machine learning in real estate.
+        -  Empowered with accurate price estimates, potential buyers can make informed decisions, enhancing their purchasing strategies.
+        -  Sellers: Sellers benefit from pricing guidance, aiding in competitive pricing and effective negotiation.
+        -  Real Estate Professionals: The project serves as a valuable tool for real estate agents and analysts, facilitating market analysis and decision-making processes.
         """)
 
     st.image(Image.open(r"G:\\PROJECT\\Singapore-Resale-Flat-Prices-Predicting\\1.jpg"), width=700) 
@@ -163,6 +165,9 @@ def Conclusion_page():
 streamlit_config()
 style_submit_button()
 style_prediction()
+
+# Create the navigation menu in the sidebar
+
 
 # Create the navigation menu in the sidebar
 with st.sidebar:
@@ -181,4 +186,3 @@ elif selected == "Flat Prediction":
     Prediction_page()
 elif selected == "Analysis":
     Conclusion_page()
-
